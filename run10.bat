@@ -1,0 +1,1 @@
+Palindromer.Client\bin\Debug\net6.0\Palindromer.Client.exe
