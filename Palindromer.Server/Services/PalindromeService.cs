@@ -1,5 +1,8 @@
 ﻿namespace Palindromer.Server.Services
 {
+    /// <summary>
+    /// Checks if a given string a palindrome
+    /// </summary>
     public class PalindromeService
     {
         public bool CheckPalindrome(string str)

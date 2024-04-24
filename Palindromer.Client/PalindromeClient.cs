@@ -11,13 +11,16 @@ using static Palindromer.Client.PalindromeClient;
 
 namespace Palindromer.Client
 {
+    /// <summary>
+    /// Sends text files to a given host to check whether the text in them is a palindrome or not.
+    /// </summary>
     public class PalindromeClient : HttpClient
     {
         private string endpoint = "/palindromme";
 
         private readonly PalindromeClientConsoleLogger logger;
 
-        private int RepeatInterval = 1000;
+        private int RepeatInterval = 3000;
 
         public PalindromeClient(string url, PalindromeClientConsoleLogger logger) 
         {
@@ -44,6 +47,7 @@ namespace Palindromer.Client
             return result;
         }
 
+        private object loggerLock = new object();
         private async Task SendPalindromeFile(string fileName, Result result, CancellationToken cancellationToken)
         {
             string content = File.ReadAllText(fileName);

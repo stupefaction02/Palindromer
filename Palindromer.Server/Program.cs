@@ -7,7 +7,7 @@ internal class Program
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-        Console.Title = "Palindromer v1.0";
+        Console.Title = "Palindromer.Server v1.0";
         Console.WriteLine("Booting up Palindromer v1.0 :)");
 
         IConfiguration configuration = builder.Configuration;
@@ -16,16 +16,25 @@ internal class Program
 
         WebApplication app = builder.Build();
 
-        int requestQuota = int.Parse(configuration["RequestQuota"]);
-        if (requestQuota < 0) requestQuota = 1;
-
-        Console.WriteLine($"Request quota: {requestQuota}");
-
-        app.UseMiddleware<RequestLimiterMiddleware>(requestQuota);
+        UseRequestLimiterMiddleware(app, configuration);
 
         app.MapGet("/palindromme", HandlePalindromeEndpoint);
 
         app.Run();
+    }
+
+    private static void UseRequestLimiterMiddleware(WebApplication app, IConfiguration configuration)
+    {
+        string q = configuration["RequestsQuota"];
+        if (q != null)
+        {
+            int requestQuota = int.Parse(q);
+            if (requestQuota < 0) requestQuota = 1;
+
+            Console.WriteLine($"Request quota: {requestQuota}");
+
+            app.UseMiddleware<RequestLimiterMiddleware>(requestQuota);
+        }
     }
 
     // approximately 100 mb

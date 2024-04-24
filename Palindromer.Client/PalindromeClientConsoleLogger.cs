@@ -2,6 +2,9 @@
 
 namespace Palindromer.Client
 {
+    /// <summary>
+    /// Logger specifically for <see href="PalindromeClient">
+    /// </summary>
     public class PalindromeClientConsoleLogger
     {
         public void LogOnPalindrome(string sourcePalFile)

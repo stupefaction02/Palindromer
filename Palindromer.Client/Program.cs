@@ -1,4 +1,5 @@
 ﻿using Palindromer.Client;
+using System.Net.Sockets;
 
 internal class Program
 {
@@ -20,6 +21,7 @@ internal class Program
                     .Where(f => Path.GetExtension(f) == ".txt");
 
                 Console.WriteLine($"Start processing directory {dirPath}.");
+                Console.WriteLine($"[file name] --------- [is a palindrome]");
 
                 PalindromeClient client = new PalindromeClient(host, logger);
                 PalindromeClient.Result result = null;
@@ -35,7 +37,7 @@ internal class Program
                 {
                     foreach (Exception ex in exceptions.InnerExceptions)
                     {
-                        if (ex is HttpRequestException)
+                        if (ex is HttpRequestException || ex is SocketException)
                         {
                             Console.ForegroundColor = ConsoleColor.Red;
                             Console.Write("ERROR! ");
@@ -44,6 +46,13 @@ internal class Program
                             break;
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Write("ERROR! ");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.WriteLine($" Please try again later.");
                 }
 
                 Console.WriteLine($"Press any key.");
