@@ -16,7 +16,12 @@ internal class Program
 
         WebApplication app = builder.Build();
 
-        app.UseMiddleware<HighLoadCheckerMiddleware>();
+        int requestQuota = int.Parse(configuration["RequestQuota"]);
+        if (requestQuota < 0) requestQuota = 1;
+
+        Console.WriteLine($"Request quota: {requestQuota}");
+
+        app.UseMiddleware<RequestLimiterMiddleware>(requestQuota);
 
         app.MapGet("/palindromme", HandlePalindromeEndpoint);
 
@@ -26,44 +31,60 @@ internal class Program
     // approximately 100 mb
     private const int maxInput = 12500000;
 
-    private static async Task<object> HandlePalindromeEndpoint(
+    private static async Task<object?> HandlePalindromeEndpoint(
             HttpContext context,
-            [FromServices] RequestsController highLoadController,
+            [FromServices] AppStatistics statistics,
             [FromServices] PalindromeService palindromeService)
     {
-        if (context.Request.ContentLength > maxInput)
+        if (context.Request.ContentLength == 0)
+        {
+            // Bad Request
+            context.Response.StatusCode = 400;
+            return default;
+        }
+        else if (context.Request.ContentLength > maxInput)
         {
             // Request Entity Too Large
             context.Response.StatusCode = 413;
-            return "";
+            return default;
         }
 
         Stream content = context.Request.Body;
-
         string input;
-        using (StreamReader streamReader = new StreamReader(content))
+        using (StreamReader streamReader = new StreamReader(context.Request.Body))
         {
             input = await streamReader.ReadToEndAsync();
 
-            context.Response.StatusCode = 200;
-
+            // usefull work ;-)
             await Task.Delay(1000);
         }
 
-        Interlocked.Decrement(ref highLoadController.RequestsCount);
+        // deletes request from statistics after it has completed
+        context.Response.RegisterForDispose(new PostRequestAction 
+        { 
+            Action = () => 
+            {
+                Interlocked.Decrement(ref statistics.RequestsCount);
+            }
+        });
 
         return new { isPalindrome = palindromeService.CheckPalindrome(input) };
     }
 
     private static void ConfigureServices(WebApplicationBuilder builder, IConfiguration configuration)
     {
-        int maxRequests = int.Parse(configuration["MaxRequests"]);
-
-        Console.WriteLine($"Max request count: {maxRequests}");
-
-        RequestsController instance = new RequestsController(maxRequests);
+        AppStatistics instance = new AppStatistics();
         builder.Services.AddSingleton(instance);
 
         builder.Services.AddTransient<PalindromeService>();
+    }
+
+    public class PostRequestAction : IDisposable
+    {
+        public Action Action { get; set; }
+        public void Dispose()
+        {
+            Action?.Invoke();
+        }
     }
 }

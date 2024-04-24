@@ -9,13 +9,15 @@ internal class Program
 
     private static void Main(string[] args)
     {
-        if (args.Length == 0)
+        if (args.Length != 0)
         {
-            string dirPath = "C:\\Users\\Ivan\\Desktop\\1";// args[0];
+            string dirPath = args[0];
 
             if (!String.IsNullOrEmpty(dirPath) & Directory.Exists(dirPath))
             {
-                IEnumerable<string> files = Directory.EnumerateFiles(dirPath);
+                // get only .txt files
+                IEnumerable<string> files = Directory.EnumerateFiles(dirPath)
+                    .Where(f => Path.GetExtension(f) == ".txt");
 
                 Console.WriteLine($"Start processing directory {dirPath}.");
 
@@ -29,22 +31,31 @@ internal class Program
 
                     Console.WriteLine($"Done. Procceded files: {result.TotalProceededFiles}, Palindromes: {result.FilesArePalindromes}");
                 }
-                catch (HttpRequestException rex)
+                catch (AggregateException exceptions)
                 {
-                    Console.WriteLine($"");
+                    foreach (Exception ex in exceptions.InnerExceptions)
+                    {
+                        if (ex is HttpRequestException)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.Write("ERROR! ");
+                            Console.ForegroundColor = ConsoleColor.White;
+                            Console.WriteLine($"{host} is down. Please try again later.");
+                            break;
+                        }
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"{ex.Message}");
-                }
-                
 
                 Console.WriteLine($"Press any key.");
                 Console.ReadKey();
                 return;
             }
 
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Write("ERROR! ");
+            Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine("Provide valid directory path!");
+            return;
         }
 
         Console.WriteLine("Usage: .exe [DIRPATH]");
